@@ -31,10 +31,10 @@ let fileManager = FileManager.default
 let workUrl           = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
 let moduleUrl         = workUrl.appendingPathComponent(module)
 
-let interfaceRouterUrl         = moduleUrl.appendingPathComponent(prefix+"Router").appendingPathExtension("swift")
-let interfacePresenterUrl      = moduleUrl.appendingPathComponent(prefix+"Presenter").appendingPathExtension("swift")
-let interfaceInteractorUrl     = moduleUrl.appendingPathComponent(prefix+"Interactor").appendingPathExtension("swift")
-let interfaceViewControllerUrl = moduleUrl.appendingPathComponent(prefix+"ViewController").appendingPathExtension("swift")
+let ProtocolRouterUrl         = moduleUrl.appendingPathComponent(prefix+"Router").appendingPathExtension("swift")
+let ProtocolPresenterUrl      = moduleUrl.appendingPathComponent(prefix+"Presenter").appendingPathExtension("swift")
+let ProtocolInteractorUrl     = moduleUrl.appendingPathComponent(prefix+"Interactor").appendingPathExtension("swift")
+let ProtocolViewControllerUrl = moduleUrl.appendingPathComponent(prefix+"ViewController").appendingPathExtension("swift")
 
 func fileComment(for module: String, type: String) -> String {
     let today    = Date()
@@ -54,101 +54,114 @@ func fileComment(for module: String, type: String) -> String {
     """
 }
 
-let interfaceRouter = """
+let ProtocolRouter = """
 \(fileComment(for: prefix, type: "Router"))
 
 import Foundation
 import UIKit
 
-protocol \(prefix)RouterInterface: class {
+protocol \(prefix)RouterProtocol: AnyObject {
 
 }
 
-class \(prefix)Router: NSObject {
+enum \(prefix)Routes {
 
-    weak var presenter: \(prefix)PresenterInterface?
+}
 
-    static func setupModule() -> \(prefix)ViewController {
+final class \(prefix)Router: NSObject {
+
+    weak var view: \(prefix)ViewController?
+
+    static func createModule() -> \(prefix)ViewController {
         let vc = \(prefix)ViewController()
         let interactor = \(prefix)Interactor()
         let router = \(prefix)Router()
         let presenter = \(prefix)Presenter(interactor: interactor, router: router, view: vc)
 
         vc.presenter = presenter
-        router.presenter = presenter
+        router.view = vc
         interactor.presenter = presenter
         return vc
     }
 }
 
-extension \(prefix)Router: \(prefix)RouterInterface {
+extension \(prefix)Router: \(prefix)RouterProtocol {
 
 }
 
 
 """
 
-let interfacePresenter = """
+let ProtocolPresenter = """
 \(fileComment(for: prefix, type: "Presenter"))
 
 import Foundation
 
-protocol \(prefix)PresenterInterface: class {
+protocol \(prefix)PresenterProtocol: AnyObject {
 
 }
 
-class \(prefix)Presenter {
+final class \(prefix)Presenter {
 
-    unowned var view: \(prefix)ViewControllerInterface
-    let router: \(prefix)RouterInterface?
-    let interactor: \(prefix)InteractorInterface?
+    unowned var view: \(prefix)ViewControllerProtocol
+    let router: \(prefix)RouterProtocol?
+    let interactor: \(prefix)InteractorProtocol?
 
-    init(interactor: \(prefix)InteractorInterface, router: \(prefix)RouterInterface, view: \(prefix)ViewControllerInterface) {
+    init(interactor: \(prefix)InteractorProtocol, router: \(prefix)RouterProtocol, view: \(prefix)ViewControllerProtocol) {
         self.view = view
         self.interactor = interactor
         self.router = router
     }
 }
 
-extension \(prefix)Presenter: \(prefix)PresenterInterface {
+extension \(prefix)Presenter: \(prefix)PresenterProtocol {
+
+}
+
+extension \(prefix)Presenter: \(prefix)InteractorOutputProtocol {
 
 }
 
 """
 
-let interfaceViewController = """
+let ProtocolViewController = """
 \(fileComment(for: prefix, type: "ViewController"))
 
 import UIKit
 
-protocol \(prefix)ViewControllerInterface: class {
+protocol \(prefix)ViewControllerProtocol: AnyObject {
 
 }
 
-class \(prefix)ViewController: UIViewController {
-    var presenter: \(prefix)PresenterInterface?
+final class \(prefix)ViewController: UIViewController {
+    var presenter: \(prefix)PresenterProtocol?
 }
 
-extension \(prefix)ViewController: \(prefix)ViewControllerInterface {
+extension \(prefix)ViewController: \(prefix)ViewControllerProtocol {
 
 }
 
 """
 
-let interfaceInteractor = """
+let ProtocolInteractor = """
 \(fileComment(for: prefix, type: "Interactor"))
 
 import Foundation
 
-protocol \(prefix)InteractorInterface: class {
+protocol \(prefix)InteractorProtocol: AnyObject {
 
 }
 
-class \(prefix)Interactor {
-    weak var presenter: \(prefix)PresenterInterface?
+
+protocol \(prefix)InteractorOutputProtocol: AnyObject {
+
 }
 
-extension \(prefix)Interactor: \(prefix)InteractorInterface {
+final class \(prefix)Interactor {
+    weak var presenter: \(prefix)InteractorOutputProtocol?
+}
+
+extension \(prefix)Interactor: \(prefix)InteractorProtocol {
 
 }
 
@@ -159,10 +172,10 @@ do {
         try fileManager.createDirectory(at: $0, withIntermediateDirectories: true, attributes: nil)
     }
     
-    try interfaceViewController.write(to: interfaceViewControllerUrl, atomically: true, encoding: .utf8)
-    try interfacePresenter.write(to: interfacePresenterUrl, atomically: true, encoding: .utf8)
-    try interfaceInteractor.write(to: interfaceInteractorUrl, atomically: true, encoding: .utf8)
-    try interfaceRouter.write(to: interfaceRouterUrl, atomically: true, encoding: .utf8)
+    try ProtocolViewController.write(to: ProtocolViewControllerUrl, atomically: true, encoding: .utf8)
+    try ProtocolPresenter.write(to: ProtocolPresenterUrl, atomically: true, encoding: .utf8)
+    try ProtocolInteractor.write(to: ProtocolInteractorUrl, atomically: true, encoding: .utf8)
+    try ProtocolRouter.write(to: ProtocolRouterUrl, atomically: true, encoding: .utf8)
     
 }
 catch {
